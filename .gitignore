@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+.npm/
+
+# Archive files
+*.rar
+*.zip
+*.tar.gz
+
+# Environment
+.env
+.env.local
+
+# Temp files
+*.tmp
+*.log
+# Keep bid-checker .gitignore patterns
+__pycache__/
+*.pyc

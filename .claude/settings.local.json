@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(//Users/jun/.claude/skills/**)",
+      "Read(//Users/jun/.claude/**)",
+      "Bash(npx skills *)",
+      "Bash(npx motion-ai *)",
+      "Bash(npx oh-my-design-cli *)",
+      "Bash(brew list *)",
+      "Bash(bsdtar -xf \"/Users/jun/aiwork/Beyond Compare 4.rar\" -C /tmp/bc4_extract/)",
+      "Bash(mkdir -p /tmp/bc4_extract)",
+      "Bash(pip install *)",
+      "Bash(python3 -m pip --version)",
+      "Bash(python3 -m pip install flask python-docx pdfplumber openai jieba)",
+      "Bash(python3 -c \"import flask; print\\('flask:', flask.__version__\\)\")",
+      "Bash(python3 -c \"import docx; print\\('python-docx: ok'\\)\")",
+      "Bash(python3 -c \"import pdfplumber; print\\('pdfplumber:', pdfplumber.__version__\\)\")",
+      "Bash(python3 -c \"import openai; print\\('openai:', openai.__version__\\)\")",
+      "Bash(python3 -c \"import jieba; print\\('jieba:', jieba.__version__\\)\")",
+      "Bash(python3 -m pip install flask openai jieba --timeout 120 -i https://mirrors.aliyun.com/pypi/simple/)",
+      "Bash(python3 *)",
+      "Bash(curl -s http://127.0.0.1:5000/)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Initial commit: 标书检查工具 v1 *)"
+    ]
+  }
+}
