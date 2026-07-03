@@ -35,6 +35,10 @@ node_modules/
 # Temp files
 *.tmp
 *.log
+# Uploaded files
+uploads/*.docx
+uploads/*.doc
+
 # Keep bid-checker .gitignore patterns
 __pycache__/
 *.pyc
