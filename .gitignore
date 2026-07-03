@@ -36,8 +36,8 @@ node_modules/
 *.tmp
 *.log
 # Uploaded files
-uploads/*.docx
-uploads/*.doc
+**/uploads/*.docx
+**/uploads/*.doc
 
 # Keep bid-checker .gitignore patterns
 __pycache__/

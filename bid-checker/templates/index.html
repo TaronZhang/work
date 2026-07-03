@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>标书检查工具 — BidChecker</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span class="brand-text">标书检查工具</span>
+        <span class="version-badge">v2</span>
+      </div>
+      <div class="mode-toggle-wrap">
+        <span class="mode-label">快速</span>
+        <label class="toggle">
+          <input type="checkbox" id="modeToggle">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <span class="mode-label">AI 辅助</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Upload Section -->
+    <section id="uploadSection" class="upload-section">
+      <div class="section-title">
+        <h2>上传文件</h2>
+        <p>支持 .docx / .pdf / .txt，单文件最大 500MB · 大文件自动分片处理</p>
+      </div>
+
+      <div class="upload-grid">
+        <!-- Tender Upload -->
+        <div class="upload-card tender-card">
+          <div class="upload-card-header">
+            <span class="badge badge-primary">招标文件</span>
+          </div>
+          <div class="drop-zone" id="tenderDropZone">
+            <div class="drop-zone-content">
+              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>拖拽招标文件到此处</p>
+              <span class="drop-hint">或 点击选择文件</span>
+            </div>
+            <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="tender" hidden>
+          </div>
+          <div class="file-status" id="tenderStatus"></div>
+        </div>
+
+        <!-- Bid Uploads -->
+        <div id="bidList" class="bid-list">
+          <div class="upload-card bid-card" data-bid-index="0">
+            <div class="upload-card-header">
+              <span class="badge badge-bid">投标文件 1</span>
+              <button class="btn-icon btn-remove" title="移除" data-remove="0" aria-label="移除投标文件 1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="drop-zone bid-drop-zone" data-bid-index="0">
+              <div class="drop-zone-content">
+                <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>拖拽投标文件到此处</p>
+                <span class="drop-hint">或 点击选择文件</span>
+              </div>
+              <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="bid" data-bid-index="0" hidden>
+            </div>
+            <div class="file-status" id="bidStatus-0"></div>
+          </div>
+
+          <div class="upload-card bid-card" data-bid-index="1">
+            <div class="upload-card-header">
+              <span class="badge badge-bid">投标文件 2</span>
+              <button class="btn-icon btn-remove" title="移除" data-remove="1" aria-label="移除投标文件 2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div class="drop-zone bid-drop-zone" data-bid-index="1">
+              <div class="drop-zone-content">
+                <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p>拖拽投标文件到此处</p>
+                <span class="drop-hint">或 点击选择文件</span>
+              </div>
+              <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="bid" data-bid-index="1" hidden>
+            </div>
+            <div class="file-status" id="bidStatus-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline btn-add" id="addBidBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        新增投标文件
+      </button>
+
+      <!-- AI Config -->
+      <div id="aiConfig" class="ai-config hidden">
+        <div class="config-card">
+          <div class="config-field">
+            <label for="apiKeyInput">API Key</label>
+            <div class="input-wrap">
+              <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+              <button class="btn-icon btn-toggle-vis" id="toggleApiKeyVis" aria-label="切换 API Key 可见性">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="modelSelect">模型</label>
+            <select id="modelSelect" class="select">
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+              <option value="gpt-4-turbo">gpt-4-turbo</option>
+            </select>
+          </div>
+          <div class="config-field">
+            <label for="baseUrlInput">API 地址 (可选)</label>
+            <input type="text" id="baseUrlInput" placeholder="https://api.openai.com/v1" class="input">
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Button -->
+      <div class="action-bar">
+        <button class="btn btn-primary btn-compare" id="compareBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          开始比较
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div id="progressBar" class="progress-wrap hidden">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="progress-text" id="progressText">正在分析…</p>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="resultsSection" class="results-section hidden">
+
+      <div id="filterSummary" class="filter-summary hidden">
+        <h3>AI 过滤结果</h3>
+        <p class="filter-subtitle">已自动识别并过滤以下类型的招标要求（不参与实质内容比对）</p>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+
+      <h3>比对结果</h3>
+      <div class="summary-cards" id="summaryCards"></div>
+
+      <div class="detail-section" id="detailSection">
+        <div class="detail-tabs" id="detailTabs"></div>
+        <div class="detail-content" id="detailContent"></div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-outline" id="resetBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          重新比较
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>BidChecker v2.0</span>
+    <span>·</span>
+    <span>大文件自动拆分 · 单文件最大 500MB</span>
+    <span>·</span>
+    <span>上传后仅存储于内存，关闭即清除</span>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
