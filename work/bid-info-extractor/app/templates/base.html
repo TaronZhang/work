@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}标书信息提取系统{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">
+                <span class="logo-icon">📋</span>
+                <span class="logo-text">BidInfo Extractor</span>
+            </a>
+            <nav class="nav">
+                <a href="/" class="nav-link">首页</a>
+                <a href="/documents" class="nav-link">文档管理</a>
+                <a href="/calendar" class="nav-link">日历事件</a>
+                <a href="/settings" class="nav-link">设置</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

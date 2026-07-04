@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  bid-info-extractor:
+    build: .
+    container_name: bid-info-extractor
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./app:/app/app
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///app/data/bid_info_extractor.db
+      - UPLOAD_DIR=/app/data/uploads
+      - EXPORT_DIR=/app/data/exports
+    restart: unless-stopped

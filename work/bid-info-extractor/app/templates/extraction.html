@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}提取结果 - 标书信息提取系统{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:var(--space-md) var(--space-lg);display:flex;justify-content:space-between;align-items:center;">
+    <h2 id="page-title">提取结果</h2>
+    <a href="/documents" class="btn btn-ghost">← 返回列表</a>
+</div>
+
+<section class="panel" style="border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+    <!-- Meta data card -->
+    <div class="panel-body">
+        <h3 style="margin-bottom:var(--space-md);">📋 基本信息</h3>
+        <div class="meta-grid" id="meta-grid">
+            <div class="meta-item">
+                <div class="meta-item-label">项目名称</div>
+                <div class="meta-item-value" id="meta-project-name">--</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-item-label">招标人</div>
+                <div class="meta-item-value" id="meta-bidder-name">--</div>
+            </div>
+            <div class="meta-item">
+                <div class="meta-item-label">投标截止日期</div>
+                <div class="meta-item-value" id="meta-deadline">--</div>
+            </div>
+        </div>
+
+        <div class="action-bar" style="margin-top:var(--space-lg);">
+            <button class="btn btn-primary" id="btn-extract-meta" onclick="extractMetadata()">
+                🔍 提取元数据
+            </button>
+            <button class="btn btn-success" id="btn-generate-md" onclick="generateMarkdown()" disabled>
+                📄 生成 Markdown
+            </button>
+            <button class="btn btn-primary" id="btn-tech-sections" onclick="extractTechSections()" disabled>
+                🔬 识别技术要求
+            </button>
+            <button class="btn btn-success" id="btn-generate-excel" onclick="generateExcel()" disabled>
+                📊 生成 Excel
+            </button>
+            <button class="btn btn-primary" id="btn-calendar" onclick="createCalendarEvent()" disabled>
+                📅 创建日历提醒
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Technical sections -->
+<section class="panel" id="tech-sections-panel" style="display:none;">
+    <div class="panel-header">
+        <h2>🔬 技术要求章节</h2>
+        <span class="panel-hint" id="tech-section-count"></span>
+    </div>
+    <div class="panel-body">
+        <ul class="section-list" id="tech-section-list"></ul>
+    </div>
+</section>
+
+<!-- Generated files -->
+<section class="panel" id="files-panel" style="display:none;">
+    <div class="panel-header">
+        <h2>📂 生成文件</h2>
+    </div>
+    <div class="panel-body" id="files-list"></div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/extraction.js"></script>
+{% endblock %}

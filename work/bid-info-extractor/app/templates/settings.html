@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}设置 - 标书信息提取系统{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header"><h2>⚙️ 系统设置</h2></div>
+    <div class="panel-body">
+        <!-- LLM Config -->
+        <h3 style="margin-bottom:var(--space-md);">🤖 大模型配置</h3>
+        <div class="form-group">
+            <label class="form-label">API Base URL</label>
+            <input class="form-input" id="cfg-llm-base-url" placeholder="https://api.openai.com/v1">
+        </div>
+        <div class="form-group">
+            <label class="form-label">API Key</label>
+            <input class="form-input" id="cfg-llm-api-key" type="password" placeholder="sk-...">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Model</label>
+            <input class="form-input" id="cfg-llm-model" placeholder="gpt-4o-mini">
+            <p class="form-hint">支持 OpenAI 兼容接口，如 gpt-4o-mini, deepseek-chat, doubao-pro 等</p>
+        </div>
+        <button class="btn btn-primary" onclick="testLLM()">🔌 测试连接</button>
+
+        <hr style="border:1px solid var(--border);margin:var(--space-xl) 0;">
+
+        <!-- Feishu Config -->
+        <h3 style="margin-bottom:var(--space-md);">🐦 飞书配置</h3>
+        <div class="form-group">
+            <label class="form-label">App ID</label>
+            <input class="form-input" id="cfg-feishu-app-id" placeholder="cli_xxxxxxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label class="form-label">App Secret</label>
+            <input class="form-input" id="cfg-feishu-app-secret" type="password" placeholder="输入 App Secret">
+        </div>
+
+        <hr style="border:1px solid var(--border);margin:var(--space-xl) 0;">
+
+        <!-- TechToExcel Config -->
+        <h3 style="margin-bottom:var(--space-md);">📊 TechToExcel 配置</h3>
+        <div class="form-group">
+            <label class="form-label">脚本路径</label>
+            <input class="form-input" id="cfg-techtoexcel-path" placeholder="/path/to/techtoexcel.py">
+            <p class="form-hint">输入 techtoexcel 脚本的完整路径</p>
+        </div>
+        <div class="form-group">
+            <label class="form-label">额外参数</label>
+            <input class="form-input" id="cfg-techtoexcel-args" placeholder="--format xlsx --verbose">
+            <p class="form-hint">调用脚本时附加的命令行参数（可选）</p>
+        </div>
+
+        <div class="action-bar" style="margin-top:var(--space-xl);">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 保存设置</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}

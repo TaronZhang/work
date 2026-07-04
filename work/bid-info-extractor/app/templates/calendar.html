@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}日历事件 - 标书信息提取系统{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2>📅 飞书日历事件</h2>
+        <span class="panel-hint" id="event-count"></span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>项目名称</th>
+                    <th>提醒日期</th>
+                    <th>时间段</th>
+                    <th>截止日期</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="event-table-body">
+            </tbody>
+        </table>
+    </div>
+    <div id="empty-events" class="empty-state hidden">暂无日历事件</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/calendar.js"></script>
+{% endblock %}

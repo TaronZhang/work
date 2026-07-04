@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}文档管理 - 标书信息提取系统{% endblock %}
+
+{% block content %}
+<div class="panel-header" style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:var(--space-md) var(--space-lg);">
+    <h2>文档管理</h2>
+</div>
+
+<section class="panel" style="border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+    <div class="upload-zone" id="upload-zone" style="margin:var(--space-lg);">
+        <div class="upload-content">
+            <span class="upload-icon">📁</span>
+            <p class="upload-text">拖拽标书文件到此处，或点击上传</p>
+            <p class="upload-hint">支持 .pdf .docx</p>
+            <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                选择文件
+            </button>
+        </div>
+    </div>
+    <div id="upload-progress" class="upload-progress hidden">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="progress-text" id="progress-text"></span>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>项目列表</h2>
+        <span class="panel-hint" id="project-count"></span>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>项目名称</th>
+                    <th>招标人</th>
+                    <th>截止日期</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="project-table-body">
+            </tbody>
+        </table>
+    </div>
+    <div id="empty-projects" class="empty-state hidden">暂无项目，上传标书开始使用</div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/documents.js"></script>
+{% endblock %}

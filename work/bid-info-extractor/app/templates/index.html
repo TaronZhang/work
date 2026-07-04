@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}首页 - 标书信息提取系统{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>标书信息提取与应答系统</h1>
+    <p class="hero-subtitle">导入招标文件，自动提取关键信息、生成应答文件、同步飞书日历</p>
+</section>
+
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value" id="stat-total">--</div>
+        <div class="stat-label">已导入项目</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="stat-pending">--</div>
+        <div class="stat-label">待提取</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value" id="stat-urgent">--</div>
+        <div class="stat-label">即将截止</div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>快速上传</h2>
+        <span class="panel-hint">支持 PDF / DOCX 格式，最大 500MB</span>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+        <div class="upload-content">
+            <span class="upload-icon">📁</span>
+            <p class="upload-text">拖拽文件到此处，或点击上传</p>
+            <p class="upload-hint">支持 .pdf .docx</p>
+            <input type="file" id="file-input" accept=".pdf,.docx" hidden>
+            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                选择文件
+            </button>
+        </div>
+    </div>
+    <div id="upload-progress" class="upload-progress hidden">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="progress-text" id="progress-text"></span>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2>最近项目</h2>
+        <a href="/documents" class="btn btn-ghost">查看全部 →</a>
+    </div>
+    <div id="recent-projects">
+        <p class="empty-state">暂无项目，上传标书开始使用</p>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    setupUploadZone('upload-zone', 'file-input', handleIndexUpload);
+    loadStats();
+    loadRecentProjects();
+});
+
+async function handleIndexUpload(file) {
+    const progressEl = document.getElementById('upload-progress');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    progressEl.classList.remove('hidden');
+    progressText.textContent = `正在上传 ${file.name}...`;
+    try {
+        const result = await uploadFile(file, (pct) => {
+            progressFill.style.width = `${pct}%`;
+            progressText.textContent = `上传中 ${pct}% — ${file.name}`;
+        });
+        showToast('上传成功！', 'success');
+        progressEl.classList.add('hidden');
+        // Redirect to extraction page
+        window.location.href = `/extraction/${result.id}`;
+    } catch (err) {
+        showToast(`上传失败: ${err.message}`, 'error');
+        progressEl.classList.add('hidden');
+    }
+}
+
+async function loadStats() {
+    try {
+        const data = await apiGet('/api/documents');
+        const projects = data.projects || [];
+        document.getElementById('stat-total').textContent = projects.length;
+        const pending = projects.filter(p => p.status === 'imported').length;
+        document.getElementById('stat-pending').textContent = pending;
+        const now = new Date();
+        const urgent = projects.filter(p => {
+            if (!p.submission_deadline) return false;
+            const dl = new Date(p.submission_deadline);
+            const diff = (dl - now) / (1000 * 60 * 60 * 24);
+            return diff > 0 && diff <= 7;
+        }).length;
+        document.getElementById('stat-urgent').textContent = urgent;
+    } catch (e) {}
+}
+
+async function loadRecentProjects() {
+    try {
+        const data = await apiGet('/api/documents');
+        const projects = (data.projects || []).slice(0, 5);
+        const container = document.getElementById('recent-projects');
+        if (projects.length === 0) return;
+        container.innerHTML = projects.map(p => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px var(--space-lg);border-bottom:1px solid var(--border);">
+                <div>
+                    <a href="/extraction/${p.id}" style="color:var(--accent-blue);text-decoration:none;font-weight:500;">
+                        ${escapeHtml(p.project_name || '(未提取)')}
+                    </a>
+                    <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">
+                        ${escapeHtml(p.source_file_name)}
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div>${statusBadge(p.status)}</div>
+                    <div style="font-size:12px;color:var(--text-tertiary);">${formatDate(p.submission_deadline)}</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {}
+}
+</script>
+{% endblock %}
