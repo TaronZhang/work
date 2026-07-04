@@ -52,8 +52,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# Static files (resolve relative to this file)
+_static_dir = str(Path(__file__).parent / "static")
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 # Page routes
 app.include_router(pages.router)
