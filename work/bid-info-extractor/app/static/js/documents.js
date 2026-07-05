@@ -85,10 +85,3 @@ async function deleteProject(id) {
         showToast(`删除失败: ${err.message}`, 'error');
     }
 }
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}

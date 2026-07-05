@@ -1,6 +1,9 @@
 // Extraction page — metadata, tech sections, Excel, calendar
 
-const projectId = parseInt(window.location.pathname.split('/').pop());
+const projectId = (() => {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    return parseInt(parts[parts.length - 1]) || 0;
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     loadProject();

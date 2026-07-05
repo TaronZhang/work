@@ -86,6 +86,14 @@ function statusBadge(status) {
     return `<span class="badge ${cls}">${labels[status] || status}</span>`;
 }
 
+// ── HTML escape ──────────────────────────────────
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // ── Upload zone setup ───────────────────────────────
 function setupUploadZone(zoneId, inputId, onSuccess) {
     const zone = document.getElementById(zoneId);
