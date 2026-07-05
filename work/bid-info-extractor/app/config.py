@@ -10,6 +10,19 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Auto-load .env file if present
+_ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+if _ENV_FILE.exists():
+    with open(_ENV_FILE) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _key, _, _val = _line.partition("=")
+                _key = _key.strip()
+                _val = _val.strip().strip('"').strip("'")
+                if _key not in os.environ:
+                    os.environ[_key] = _val
+
 # Base paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
