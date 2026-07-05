@@ -1,14 +1,14 @@
-"""TechToExcel 管线 — 招标文件 → 技术偏离表 Excel.
+"""TechToExcel 管线 — 纯 Python 解析 + LLM 仅辅助章节识别.
 
-数据处理策略:
-- 表格: 程序化直接解析 (每行 → 一条目, 表头行作字段名)
-- 段落: LLM 智能拆条 (按规则合并/拆分)
-- C列: 强制生成 "应答:完全满足且无偏离.我司按照招标要求提供服务.{清洗后原文}"
+策略:
+- 表格 → 程序化解析 (每行一条目, 表头=字段名)
+- 段落 → 按标题/编号规则拆分
+- C列 → 强制生成, 永不为空
+- 不依赖 LLM 拆分条目 (避免格式混乱和空值)
 """
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from dataclasses import dataclass, field
@@ -21,11 +21,19 @@ from app.services.techtoexcel_utils import (
     write_excel,
 )
 
-
-# ── Entry format ─────────────────────────────────────────
-
-# C 列应答模板
 RESP_PREFIX = "应答:完全满足且无偏离.我司按照招标要求提供服务."
+
+# 技术相关关键词 (用于段落筛选)
+TECH_HEADING_KW = re.compile(
+    r"(采购需求|采购要求|技术要求|技术规范|技术标准|项目需求|"
+    r"服务内容|服务需求|功能要求|技术参数|实施方案|建设内容|"
+    r"建设要求|系统功能|性能要求|安全要求|接口要求|"
+    r"招标内容|项目概况|服务范围|工作内容)",
+    re.IGNORECASE,
+)
+
+# Markdown / 格式符号清理
+MD_CLEAN = re.compile(r"[*#_>`|~\-]{2,}")
 
 
 @dataclass
@@ -52,14 +60,10 @@ async def run_techtoexcel_pipeline(
     api_key: str = "",
     model: str = "",
 ) -> TechToExcelResult:
-    """从招标文件提取技术章节，生成点对点技术偏离表。
+    """从招标文件生成技术偏离表。
 
-    流程:
-    1. 定位章节 → 提取段落 + 表格
-    2. 表格直接解析为条目 (每行一条)
-    3. 段落 LLM 拆条
-    4. 合并 + C列清洗 + 验证
-    5. 输出专业格式 Excel
+    纯 Python 解析，不依赖 LLM 拆分条目。
+    LLM 仅在上游用于识别技术章节名称。
     """
     # 1. 提取
     try:
@@ -71,53 +75,52 @@ async def run_techtoexcel_pipeline(
     if not paragraphs:
         return TechToExcelResult(success=False, error="文档无内容")
 
-    # 2. 定位章节
+    # 2. 定位章节范围 (模糊匹配)
     ch_start, ch_end = _locate_chapter(paragraphs, chapter_name)
+
+    # 3. 如果章节定位失败，用关键词筛选段落
     if ch_start is None:
-        return TechToExcelResult(success=False, error=f"未找到章节: {chapter_name}")
+        ch_paragraphs = _filter_tech_paragraphs(paragraphs)
+    else:
+        ch_paragraphs = paragraphs[ch_start:ch_end]
 
-    ch_paragraphs = paragraphs[ch_start:ch_end]
+    if not ch_paragraphs:
+        return TechToExcelResult(success=False, error="未找到技术相关段落")
 
-    # 3. 表格 → 条目 (程序化解析，不依赖 LLM)
+    # 4. 表格 → 条目 (程序化)
     table_entries = _parse_tables_to_entries(tables)
 
-    # 4. 段落 → 条目 (LLM 或规则拆条)
-    para_entries = []
-    para_text = "\n".join(p[2] for p in ch_paragraphs)
-    if api_key and base_url:
-        para_entries = await _llm_split_paragraphs(para_text, base_url, api_key, model)
-    if not para_entries:
-        para_entries = _rule_split_paragraphs(ch_paragraphs)
+    # 5. 段落 → 条目 (按标题/编号规则拆分)
+    para_entries = _split_paragraphs_to_entries(ch_paragraphs)
 
-    # 5. 合并所有条目
+    # 6. 合并
     all_entries = table_entries + para_entries
 
     if not all_entries:
         return TechToExcelResult(success=False, error="未能生成任何条目")
 
-    # 6. 强制生成 C 列应答 + 清洗
+    # 7. 强制填充 C 列 + 清洗 Markdown
     for entry in all_entries:
-        bid_text = entry.get("bid", "")
-        if not bid_text or not bid_text.strip():
+        bid_text = _strip_markdown(entry.get("bid", ""))
+        if not bid_text.strip():
             continue
+        entry["bid"] = bid_text
         cleaned = clean_resp(bid_text)
         entry["resp"] = f"{RESP_PREFIX}{cleaned}"
         entry.setdefault("deviation", "无偏离")
 
-    # 过滤无效条目
+    # 8. 过滤无效条目
     all_entries = [
         e for e in all_entries
-        if e.get("bid", "").strip()
-        and not _is_chapter_title(e.get("bid", ""))
+        if e.get("bid", "").strip() and not _is_skip_line(e.get("bid", ""))
     ]
 
     if not all_entries:
-        return TechToExcelResult(success=False, error="所有条目内容为空")
+        return TechToExcelResult(success=False, error="所有条目内容为空或仅含标题")
 
-    # 7. 验证
+    # 9. 验证 + 写 Excel
     issues = verify(all_entries)
 
-    # 8. 写 Excel
     from app.services.file_service import sanitize_filename
 
     name_safe = sanitize_filename(project_name) if project_name else "项目"
@@ -137,180 +140,163 @@ async def run_techtoexcel_pipeline(
 
 
 # ====================================================================
-# 表格解析 (程序化，不依赖 LLM)
+# 表格解析
 # ====================================================================
 
 
 def _parse_tables_to_entries(tables: list[list[list[str]]]) -> list[dict]:
-    """将 docx 表格直接解析为偏离表条目。
-
-    规则:
-    - 第一行作为表头 (字段名)
-    - 后续每行 → 一条目
-    - B列格式: "字段1：值1,字段2：值2,..."
-    - 跳过空行和表头行
-    """
+    """表格行 → 条目。第一行=字段名, 后续每行=一条。"""
     entries: list[dict] = []
 
     for table in tables:
         if not table or len(table) < 2:
             continue
 
-        headers = table[0]  # 第一行 = 字段名
+        headers = [_clean_cell(c) for c in table[0]]
 
         for row in table[1:]:
-            # 构建 "字段：值" 格式
             parts = []
             for i, cell in enumerate(row):
-                val = (cell or "").strip()
+                val = _clean_cell(cell)
                 if not val:
                     continue
-                # 使用对应表头作字段名
-                field = headers[i].strip() if i < len(headers) and headers[i].strip() else f"字段{i+1}"
+                field = headers[i] if i < len(headers) and headers[i] else f"字段{i + 1}"
                 parts.append(f"{field}：{val}")
 
             if not parts:
                 continue
 
-            bid_text = ", ".join(parts)
             entries.append({
-                "bid": bid_text,
-                "resp": "",    # 稍后统一填充
+                "bid": "，".join(parts) + "。",
+                "resp": "",
                 "deviation": "无偏离",
             })
 
     return entries
 
 
-# ====================================================================
-# 段落拆条 (LLM)
-# ====================================================================
-
-
-PARA_SPLIT_PROMPT = """你是招标文件技术条款拆分专家。将以下段落内容拆分为逐条应答条目。
-
-## 规则
-
-### 条目划分
-1. 每个独立需求点 = 一条目 (如一个功能点、一项技术指标)
-2. 编号列表 (1. 2. 或 a) b) 或 (1) (2)) 按编号各自成条
-3. "以下"/"如下"/"包括" 开头的段落 → 其后的子项合并为一条
-4. 纯标题无内容 → 跳过
-5. 备注/说明/注 → 跳过
-
-### B列格式
-完全复制原文，一字不改，不得截断。长段落完整保留。
-
-### 输出 JSON
-{
-  "entries": [
-    {"bid": "原文完整内容", "deviation": "无偏离"}
-  ]
-}"""
-
-
-async def _llm_split_paragraphs(
-    para_text: str,
-    base_url: str,
-    api_key: str,
-    model: str,
-) -> list[dict]:
-    """LLM 将段落拆分为条目。"""
-    if len(para_text) < 20:
-        return _simple_split(para_text)
-
-    from openai import AsyncOpenAI
-
-    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    snippet = para_text[:80000]
-
-    try:
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": PARA_SPLIT_PROMPT},
-                {"role": "user", "content": f"请拆分以下技术条款:\n\n{snippet}"},
-            ],
-            temperature=0.05,
-            response_format={"type": "json_object"},
-        )
-        raw = response.choices[0].message.content
-        data = json.loads(raw) if raw else {}
-        entries = data.get("entries", [])
-        # 确保每条都有 deviation
-        for e in entries:
-            e.setdefault("deviation", "无偏离")
-        return entries
-    except Exception:
-        return _rule_split_paragraphs(
-            [(i, "Normal", t) for i, t in enumerate(para_text.split("\n")) if t.strip()]
-        )
-
-
-def _simple_split(text: str) -> list[dict]:
-    """极简拆分：短文本直接一条。"""
-    return [{"bid": text.strip(), "deviation": "无偏离"}] if text.strip() else []
+def _clean_cell(text: str) -> str:
+    """清洗单元格文本。"""
+    if not text:
+        return ""
+    text = text.replace("\n", " ").replace("\r", " ")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
 # ====================================================================
-# 段落拆条 (规则回退)
+# 段落拆分 (纯规则，不需要 LLM)
 # ====================================================================
 
 
-def _rule_split_paragraphs(
+def _split_paragraphs_to_entries(
     paragraphs: list[tuple[int, str, str]],
 ) -> list[dict]:
-    """基于标题层级和编号规则的段落拆条 (无需 LLM)。"""
+    """按标题层级和编号规则拆分段落为条目。"""
     entries: list[dict] = []
-    current_bid: list[str] = []
+    current_title = ""
+    current_lines: list[str] = []
 
-    # 编号检测
-    numbered = re.compile(
-        r"^\s*(?:\d+[\.\)、]\s*|[\(（]\d+[\)）]\s*|[a-z][\)\.]\s*|[①②③④⑤⑥⑦⑧⑨⑩])"
-    )
+    # 标题检测：Heading 样式 或 短文本+关键词
+    def _is_title(text: str, style: str) -> bool:
+        if style and ("Heading" in style or "heading" in style.lower()):
+            return True
+        if len(text) < 35 and ("要求" in text or "需求" in text or "内容" in text or "功能" in text):
+            return True
+        if re.match(r"^第[一二三四五六七八九十\d]+[章节]", text):
+            return True
+        if re.match(r"^[一二三四五六七八九十]+[、，]", text):
+            return True
+        return False
 
     for idx, style, text in paragraphs:
         text = text.strip()
         if not text:
             continue
 
-        is_heading = bool(
-            style and ("Heading" in style or "heading" in style.lower())
-        ) or (len(text) < 40 and ("要求" in text or "需求" in text or "功能" in text or "内容" in text))
+        # 跳过纯格式/标记行
+        if _is_skip_line(text):
+            continue
 
-        is_numbered = bool(numbered.match(text))
-
-        if is_heading and current_bid:
-            entries.append({"bid": "\n".join(current_bid), "deviation": "无偏离"})
-            current_bid = []
-        elif is_numbered and current_bid:
-            entries.append({"bid": "\n".join(current_bid), "deviation": "无偏离"})
-            current_bid = [text]
+        if _is_title(text, style):
+            # 保存上一个分组
+            if current_lines:
+                entries.append(_make_entry(current_title, current_lines))
+            current_title = text
+            current_lines = []
         else:
-            current_bid.append(text)
+            current_lines.append(text)
 
-    if current_bid:
-        entries.append({"bid": "\n".join(current_bid), "deviation": "无偏离"})
+    # 保存最后一组
+    if current_lines:
+        entries.append(_make_entry(current_title, current_lines))
 
-    # 如果拆得太少, 再按自然段拆
-    if len(entries) <= 1 and len(paragraphs) > 3:
+    # 如果条目太少，按自然段拆分
+    if len(entries) <= 2 and len(paragraphs) > 5:
         entries = []
         buf: list[str] = []
         for idx, style, text in paragraphs:
             text = text.strip()
-            if not text:
+            if not text or _is_skip_line(text):
                 continue
-            if len(text) > 80:
+            # 编号行 → 新条目
+            if re.match(r"^\s*(?:\d+[\.\)、]|[a-z][\)\.]|[\(（]\d+[\)）]|[①②③④⑤⑥⑦⑧⑨⑩])", text):
                 if buf:
-                    entries.append({"bid": "\n".join(buf), "deviation": "无偏离"})
+                    entries.append(_make_entry("", buf))
                     buf = []
-                entries.append({"bid": text, "deviation": "无偏离"})
-            else:
-                buf.append(text)
+            buf.append(text)
         if buf:
-            entries.append({"bid": "\n".join(buf), "deviation": "无偏离"})
+            entries.append(_make_entry("", buf))
 
     return entries
+
+
+def _make_entry(title: str, lines: list[str]) -> dict:
+    """构造条目。标题(如有)作为首行，后续为正文。"""
+    if title and title not in lines:
+        full = "\n".join([title] + lines)
+    else:
+        full = "\n".join(lines)
+    return {"bid": full.strip(), "resp": "", "deviation": "无偏离"}
+
+
+def _is_skip_line(text: str) -> bool:
+    """跳过无意义的行。"""
+    t = text.strip()
+    if not t:
+        return True
+    if t in ("备注", "说明", "注", "注释", "提示"):
+        return True
+    if re.match(r"^备注[：:]", t):
+        return True
+    # 纯数字/页码
+    if re.match(r"^\d{1,3}$", t):
+        return True
+    return False
+
+
+# ====================================================================
+# Markdown 清理
+# ====================================================================
+
+
+def _strip_markdown(text: str) -> str:
+    """从文本中移除 Markdown 格式标记。"""
+    # 去除 ## ### 等标题标记
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    # 去除 ** 粗体
+    text = text.replace("**", "")
+    # 去除 __ 粗体
+    text = text.replace("__", "")
+    # 去除 ` 代码标记
+    text = text.replace("`", "")
+    # 去除 > 引用
+    text = re.sub(r"^>\s+", "", text, flags=re.MULTILINE)
+    # 去除水平线
+    text = re.sub(r"^[-*_]{3,}\s*$", "", text, flags=re.MULTILINE)
+    # 清理多余空行
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 # ====================================================================
@@ -322,16 +308,12 @@ def _locate_chapter(
     paragraphs: list[tuple[int, str, str]],
     chapter_name: str,
 ) -> tuple[int | None, int | None]:
-    """在段落列表中定位章节的起止索引。
+    """模糊匹配章节起止。"""
+    if not chapter_name:
+        return None, None
 
-    使用模糊匹配：chapter_name 中的关键词任意一个匹配即可。
-    例如 chapter_name="第三章 采购需求" 会匹配 "第三章 采购需求" 或 "采购需求"。
-    """
     ch_start = None
     ch_end = None
-
-    # 提取关键词用于模糊匹配
-    keywords = _extract_keywords(chapter_name)
 
     ch_patterns = [
         "第一章", "第二章", "第三章", "第四章", "第五章",
@@ -340,49 +322,35 @@ def _locate_chapter(
         "六、", "七、", "八、", "九、", "十、",
     ]
 
+    # 提取搜索词
+    keywords = _extract_keywords(chapter_name)
+
     for i, (idx, style, text) in enumerate(paragraphs):
-        # 模糊匹配：任意关键词命中即视为章节开始
         if ch_start is None and _fuzzy_match(text, keywords, chapter_name):
             ch_start = i
             continue
         if ch_start is not None and ch_end is None:
             for ch in ch_patterns:
-                if ch != chapter_name and ch in text and ("第" in text or "、" in text[:3]):
+                if ch not in chapter_name and ch in text and ("第" in text or "、" in text[:3]):
                     ch_end = i
                     break
 
-    if ch_end is None:
+    if ch_end is None and ch_start is not None:
         ch_end = len(paragraphs)
-
-    # 如果模糊匹配也失败，尝试直接用 chapter_name 的头几个字匹配
-    if ch_start is None and len(chapter_name) >= 2:
-        prefix = chapter_name[:4]
-        for i, (idx, style, text) in enumerate(paragraphs):
-            if prefix in text or chapter_name.replace(" ", "") in text.replace(" ", ""):
-                ch_start = i
-                break
-        if ch_start is not None:
-            ch_end = len(paragraphs)
 
     return ch_start, ch_end
 
 
 def _extract_keywords(name: str) -> list[str]:
-    """从章节名提取关键词。"""
-    # 去掉"第X章"前缀，剩下的部分作为关键词
-    import re as _re
-    name = _re.sub(r"第[一二三四五六七八九十\d]+章\s*", "", name)
-    name = _re.sub(r"第[一二三四五六七八九十\d]+节\s*", "", name)
-    # 按标点分割
-    parts = _re.split(r"[，,、\s]+", name.strip())
+    name = re.sub(r"第[一二三四五六七八九十\d]+章\s*", "", name)
+    name = re.sub(r"第[一二三四五六七八九十\d]+节\s*", "", name)
+    parts = re.split(r"[，,、\s]+", name.strip())
     return [p for p in parts if len(p) >= 2]
 
 
 def _fuzzy_match(text: str, keywords: list[str], full_name: str) -> bool:
-    """模糊匹配：text 包含 full_name 或任意一个关键词。"""
     if full_name in text:
         return True
-    # 去掉空格后比较
     if full_name.replace(" ", "") in text.replace(" ", ""):
         return True
     for kw in keywords:
@@ -391,25 +359,22 @@ def _fuzzy_match(text: str, keywords: list[str], full_name: str) -> bool:
     return False
 
 
-def _is_chapter_title(text: str) -> bool:
-    """判断是否为章节标题（无实质内容的纯标题行）。"""
-    patterns = [
-        r"^第[一二三四五六七八九十\d]+章",
-        r"^第[一二三四五六七八九十\d]+节",
-        r"^[一二三四五六七八九十]+[、，]",
-        r"^（[一二三四五六七八九十\d]+）",
-    ]
-    text = text.strip()
-    # 只有标题没有内容（长度 < 30 且匹配标题模式）
-    if len(text) < 30:
-        for pat in patterns:
-            if re.match(pat, text):
-                return True
-    return False
+def _filter_tech_paragraphs(
+    paragraphs: list[tuple[int, str, str]],
+) -> list[tuple[int, str, str]]:
+    """关键词筛选技术相关段落（章节定位失败时的回退）。"""
+    result = []
+    in_tech = False
+    for idx, style, text in paragraphs:
+        if TECH_HEADING_KW.search(text) and ("Heading" in str(style) or len(text) < 50):
+            in_tech = True
+        if in_tech:
+            result.append((idx, style, text))
+    return result if result else paragraphs
 
 
 # ====================================================================
-# 简化接口 (文本模式回退)
+# 简化接口
 # ====================================================================
 
 
@@ -418,7 +383,7 @@ async def call_techtoexcel(
     output_dir: str,
     project_name: str,
 ) -> dict:
-    """文本模式：无原始 docx 时的回退。"""
+    """文本回退模式。"""
     from app.services.file_service import generate_tech_excel
 
     filepath = generate_tech_excel(tech_text, project_name)
