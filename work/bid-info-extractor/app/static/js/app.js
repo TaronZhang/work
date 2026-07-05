@@ -100,17 +100,31 @@ function setupUploadZone(zoneId, inputId, onSuccess) {
     const input = document.getElementById(inputId);
     if (!zone || !input) return;
 
-    zone.addEventListener('click', () => input.click());
+    let _uploading = false;
+
+    zone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (_uploading) return;
+        input.value = '';  // Reset so same file re-selection triggers change
+        input.click();
+    });
     zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
     zone.addEventListener('drop', (e) => {
         e.preventDefault();
         zone.classList.remove('drag-over');
+        if (_uploading) return;
         const file = e.dataTransfer.files[0];
-        if (file && onSuccess) onSuccess(file);
+        if (file) {
+            _uploading = true;
+            onSuccess(file).finally(() => { _uploading = false; });
+        }
     });
     input.addEventListener('change', () => {
         const file = input.files[0];
-        if (file && onSuccess) onSuccess(file);
+        if (file) {
+            _uploading = true;
+            onSuccess(file).finally(() => { _uploading = false; });
+        }
     });
 }

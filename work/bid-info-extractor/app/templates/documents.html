@@ -13,7 +13,7 @@
             <p class="upload-text">拖拽标书文件到此处，或点击上传</p>
             <p class="upload-hint">支持 .pdf .docx</p>
             <input type="file" id="file-input" accept=".pdf,.docx" hidden>
-            <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+            <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('file-input').click()">
                 选择文件
             </button>
         </div>
