@@ -197,7 +197,7 @@ def _split_paragraphs_to_entries(
     current_title = ""
     current_lines: list[str] = []
 
-    # 标题检测：Heading 样式 或 短文本+关键词
+    # 标题检测：Heading 样式 或 短文本+关键词 或 中文序号
     def _is_title(text: str, style: str) -> bool:
         if style and ("Heading" in style or "heading" in style.lower()):
             return True
@@ -205,7 +205,16 @@ def _split_paragraphs_to_entries(
             return True
         if re.match(r"^第[一二三四五六七八九十\d]+[章节]", text):
             return True
-        if re.match(r"^[一二三四五六七八九十]+[、，]", text):
+        if re.match(r"^[一二三四五六七八九十]+[、，]\s*$", text):
+            return True
+        if re.match(r"^[一二三四五六七八九十]+[、，]\s*\S{1,15}$", text):
+            return True
+        if re.match(r"^\([一二三四五六七八九十\d]+\)\s*\S{1,20}$", text):
+            return True
+        if re.match(r"^[（(][一二三四五六七八九十\d]+[）)]\s*\S{1,20}$", text):
+            return True
+        # 纯序号无内容
+        if re.match(r"^\d+[\.\)、]?\s*$", text):
             return True
         return False
 
@@ -265,12 +274,25 @@ def _is_skip_line(text: str) -> bool:
     t = text.strip()
     if not t:
         return True
+    if len(t) < 8:
+        return True
     if t in ("备注", "说明", "注", "注释", "提示"):
         return True
     if re.match(r"^备注[：:]", t):
         return True
-    # 纯数字/页码
     if re.match(r"^\d{1,3}$", t):
+        return True
+    # 纯标题行 (中文序号+标题, 无实质内容)
+    if re.match(r"^[一二三四五六七八九十]+[、，]\s*\S{2,20}$", t):
+        return True
+    if re.match(r"^\([一二三四五六七八九十\d]+\)\s*\S{2,20}$", t):
+        return True
+    if re.match(r"^[（(][一二三四五六七八九十\d]+[）)]\s*\S{2,20}$", t):
+        return True
+    # 表结构信息 (非实际内容)
+    if re.match(r"^包件号\s*[|｜]", t):
+        return True
+    if re.match(r"^[|｜].*[|｜]$", t):
         return True
     return False
 
