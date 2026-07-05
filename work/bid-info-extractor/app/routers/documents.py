@@ -17,6 +17,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.db.database import get_db
 from app.db.models import Document, Project
+from app.logger import log_error
 from app.services.parser import parse_file
 from app.services.file_service import generate_markdown_summary
 
@@ -108,6 +109,7 @@ async def upload_document(
             auto_extracted = True
         except Exception as e:
             extract_error = str(e)
+            log_error("upload.auto_extract", extract_error, {"project_id": project.id})
             # Don't fail the upload — metadata can be extracted later
 
     return {

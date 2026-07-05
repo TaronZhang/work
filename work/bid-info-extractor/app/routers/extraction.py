@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.database import get_db
 from app.db.models import Document, Project
+from app.logger import log_error
 from app.services.file_service import generate_markdown_summary, generate_tech_excel
 from app.services.metadata_extractor import extract_metadata
 from app.services.section_identifier import identify_tech_sections
@@ -59,6 +60,7 @@ async def extract_project_metadata(
             model=settings.llm_model,
         )
     except Exception as e:
+        log_error("extraction.metadata", str(e), {"project_id": req.project_id})
         raise HTTPException(500, f"LLM 提取失败: {str(e)}")
 
     # Update project

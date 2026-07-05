@@ -11,6 +11,10 @@ data/exports/*
 data/*.db
 !data/.gitkeep
 
+# Logs
+log/*.log
+!log/.gitkeep
+
 # Environment
 .env
 .env.local
