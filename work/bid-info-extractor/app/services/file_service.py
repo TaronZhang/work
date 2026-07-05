@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """File generation service — Markdown and artifact management."""
+
+from __future__ import annotations
 
 import os
 import re
@@ -15,7 +15,6 @@ def sanitize_filename(name: str) -> str:
     unsafe = r'[<>:"/\\|?*\n\r\t]'
     name = re.sub(unsafe, "_", name)
     name = re.sub(r"\s+", " ", name).strip()
-    # Limit length
     if len(name) > 200:
         name = name[:200]
     return name
@@ -27,10 +26,7 @@ def generate_markdown_summary(
     deadline,
     source_filename: str,
 ) -> str:
-    """Generate a summary markdown file for the bid project.
-
-    Returns the absolute file path of the generated markdown.
-    """
+    """Generate a summary markdown file for the bid project."""
     name_safe = sanitize_filename(project_name) if project_name else "未命名项目"
     filename = f"{name_safe}信息V1.md"
     filepath = os.path.join(settings.export_dir, filename)
@@ -72,52 +68,32 @@ def generate_tech_excel(
     tech_text: str,
     project_name: str,
 ) -> str:
-    """Generate a basic Excel template for point-by-point technical response.
+    """Generate point-by-point technical response Excel.
 
-    This is used when no external techtoexcel script is configured.
-    Returns the file path of the generated Excel.
+    Uses the same 4-column format as the techtoexcel pipeline,
+    with C column ALWAYS populated.
     """
-    import openpyxl
+    from app.services.techtoexcel_utils import clean_resp, write_excel
 
     name_safe = sanitize_filename(project_name) if project_name else "未命名项目"
     filename = f"{name_safe}_技术应答.xlsx"
     filepath = os.path.join(settings.export_dir, filename)
 
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "技术点对点应答"
-
-    # Header
-    headers = ["序号", "技术要求原文", "应答内容", "偏离说明", "证明材料"]
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
-        cell.font = openpyxl.styles.Font(bold=True)
-        cell.fill = openpyxl.styles.PatternFill(
-            start_color="4472C4", end_color="4472C4", fill_type="solid"
-        )
-        cell.font = openpyxl.styles.Font(bold=True, color="FFFFFF")
-
-    # Parse tech_text into individual requirements
-    # Split by numbered items or paragraph breaks
+    # Parse items
     items = _parse_requirement_items(tech_text)
 
-    for i, item in enumerate(items):
-        row = i + 2
-        ws.cell(row=row, column=1, value=i + 1)
-        ws.cell(row=row, column=2, value=item)
-        ws.cell(row=row, column=3, value="")  # To be filled
-        ws.cell(row=row, column=4, value="无偏离")
-        ws.cell(row=row, column=5, value="")
-
-    # Column widths
-    ws.column_dimensions["A"].width = 6
-    ws.column_dimensions["B"].width = 50
-    ws.column_dimensions["C"].width = 50
-    ws.column_dimensions["D"].width = 12
-    ws.column_dimensions["E"].width = 20
+    # Build entries with mandatory C column
+    entries = []
+    for item in items:
+        cleaned = clean_resp(item)
+        entries.append({
+            "bid": item,
+            "resp": f"应答:完全满足且无偏离.我司按照招标要求提供服务.{cleaned}",
+            "deviation": "无偏离",
+        })
 
     Path(os.path.dirname(filepath)).mkdir(parents=True, exist_ok=True)
-    wb.save(filepath)
+    write_excel(entries, filepath)
     return filepath
 
 
@@ -125,7 +101,6 @@ def _parse_requirement_items(text: str) -> list[str]:
     """Parse requirement text into individual items."""
     items = []
 
-    # Try splitting by numbered patterns
     pattern = re.compile(
         r"(?:^|\n)\s*(?:\d+[\.\)、]\s*|\(\d+\)\s*|[（(]\d+[）)]\s*)", re.MULTILINE
     )
@@ -133,11 +108,10 @@ def _parse_requirement_items(text: str) -> list[str]:
 
     for s in splits:
         s = s.strip()
-        if s and len(s) > 10:  # Filter out empty/too-short items
+        if s and len(s) > 10:
             items.append(s)
 
     if not items:
-        # Fallback: split by paragraphs
         items = [p.strip() for p in text.split("\n") if len(p.strip()) > 10]
 
-    return items[:200]  # Limit to 200 items
+    return items[:200]

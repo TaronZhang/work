@@ -251,7 +251,16 @@ async def generate_excel(
         entry_count = pipeline_result.entry_count
         issues = pipeline_result.issues
 
-    # Save document record
+    # Remove old Excel documents for this project before saving new one
+    from sqlalchemy import delete as sql_delete
+    await db.execute(
+        sql_delete(Document).where(
+            Document.project_id == project.id,
+            Document.doc_type == "excel",
+        )
+    )
+
+    # Save new document record
     doc = Document(
         project_id=project.id,
         doc_type="excel",
