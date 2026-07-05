@@ -202,31 +202,41 @@ async def generate_excel(
     if not tech_result.has_tech_content:
         raise HTTPException(400, "未识别到技术要求内容")
 
-    # Get chapter name from first identified section
-    chapter_name = ""
+    # Step 2: Build chapter name candidates from identified sections
+    chapter_candidates: list[str] = []
     if tech_result.sections:
-        chapter_name = tech_result.sections[0].title
+        for s in tech_result.sections[:3]:  # Top 3 sections
+            chapter_candidates.append(s.title)
 
-    # Step 2: Try full techtoexcel pipeline (only for .docx source)
+    # Always try common chapter name patterns as fallback
+    chapter_candidates.extend(["采购需求", "技术要求", "项目需求", "服务内容及要求"])
+
+    # Step 3: Try full techtoexcel pipeline with each candidate
     pipeline_result = None
+    last_error = ""
     if project.source_format == "docx" and os.path.exists(project.source_file_path):
         from app.services.techtoexcel_bridge import run_techtoexcel_pipeline
 
-        pipeline_result = await run_techtoexcel_pipeline(
-            source_docx_path=project.source_file_path,
-            chapter_name=chapter_name or "采购需求",
-            output_dir=settings.export_dir,
-            project_name=project.project_name or "项目",
-            base_url=settings.llm_base_url,
-            api_key=settings.llm_api_key,
-            model=settings.llm_model,
-        )
+        for ch_name in chapter_candidates:
+            if not ch_name:
+                continue
+            pipeline_result = await run_techtoexcel_pipeline(
+                source_docx_path=project.source_file_path,
+                chapter_name=ch_name,
+                output_dir=settings.export_dir,
+                project_name=project.project_name or "项目",
+                base_url=settings.llm_base_url,
+                api_key=settings.llm_api_key,
+                model=settings.llm_model,
+            )
+            if pipeline_result.success:
+                break
+            last_error = pipeline_result.error or ""
 
-    # Step 3: Fall back to text-based generation
+    # Step 4: Fall back to text-based generation
     if pipeline_result is None or not pipeline_result.success:
-        if pipeline_result and pipeline_result.error:
-            # Log the error but continue with fallback
-            pass
+        if last_error:
+            log_error("generate-excel.pipeline", last_error, {"project_id": req.project_id})
 
         tech_text = tech_result.combined_text
         filepath = generate_tech_excel(tech_text, project.project_name or "项目")

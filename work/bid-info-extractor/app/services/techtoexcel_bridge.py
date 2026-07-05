@@ -322,9 +322,16 @@ def _locate_chapter(
     paragraphs: list[tuple[int, str, str]],
     chapter_name: str,
 ) -> tuple[int | None, int | None]:
-    """在段落列表中定位章节的起止索引。"""
+    """在段落列表中定位章节的起止索引。
+
+    使用模糊匹配：chapter_name 中的关键词任意一个匹配即可。
+    例如 chapter_name="第三章 采购需求" 会匹配 "第三章 采购需求" 或 "采购需求"。
+    """
     ch_start = None
     ch_end = None
+
+    # 提取关键词用于模糊匹配
+    keywords = _extract_keywords(chapter_name)
 
     ch_patterns = [
         "第一章", "第二章", "第三章", "第四章", "第五章",
@@ -334,7 +341,8 @@ def _locate_chapter(
     ]
 
     for i, (idx, style, text) in enumerate(paragraphs):
-        if chapter_name in text and ch_start is None:
+        # 模糊匹配：任意关键词命中即视为章节开始
+        if ch_start is None and _fuzzy_match(text, keywords, chapter_name):
             ch_start = i
             continue
         if ch_start is not None and ch_end is None:
@@ -346,7 +354,41 @@ def _locate_chapter(
     if ch_end is None:
         ch_end = len(paragraphs)
 
+    # 如果模糊匹配也失败，尝试直接用 chapter_name 的头几个字匹配
+    if ch_start is None and len(chapter_name) >= 2:
+        prefix = chapter_name[:4]
+        for i, (idx, style, text) in enumerate(paragraphs):
+            if prefix in text or chapter_name.replace(" ", "") in text.replace(" ", ""):
+                ch_start = i
+                break
+        if ch_start is not None:
+            ch_end = len(paragraphs)
+
     return ch_start, ch_end
+
+
+def _extract_keywords(name: str) -> list[str]:
+    """从章节名提取关键词。"""
+    # 去掉"第X章"前缀，剩下的部分作为关键词
+    import re as _re
+    name = _re.sub(r"第[一二三四五六七八九十\d]+章\s*", "", name)
+    name = _re.sub(r"第[一二三四五六七八九十\d]+节\s*", "", name)
+    # 按标点分割
+    parts = _re.split(r"[，,、\s]+", name.strip())
+    return [p for p in parts if len(p) >= 2]
+
+
+def _fuzzy_match(text: str, keywords: list[str], full_name: str) -> bool:
+    """模糊匹配：text 包含 full_name 或任意一个关键词。"""
+    if full_name in text:
+        return True
+    # 去掉空格后比较
+    if full_name.replace(" ", "") in text.replace(" ", ""):
+        return True
+    for kw in keywords:
+        if kw in text:
+            return True
+    return False
 
 
 def _is_chapter_title(text: str) -> bool:
