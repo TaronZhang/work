@@ -205,7 +205,14 @@ async def get_project(project_id: int, db: AsyncSession = Depends(get_db)):
 @router.delete("/{project_id}")
 async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
     """Delete a project and its associated files."""
-    result = await db.execute(select(Project).where(Project.id == project_id))
+    result = await db.execute(
+        select(Project)
+        .where(Project.id == project_id)
+        .options(
+            selectinload(Project.documents),
+            selectinload(Project.calendar_events),
+        )
+    )
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(404, "项目不存在")
