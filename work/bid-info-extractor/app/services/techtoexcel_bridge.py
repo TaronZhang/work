@@ -99,9 +99,10 @@ async def run_techtoexcel_pipeline(
     if not all_entries:
         return TechToExcelResult(success=False, error="未能生成任何条目")
 
-    # 7. 强制填充 C 列 + 清洗 Markdown
+    # 7. 强制填充 C 列 + 清洗 Markdown + 去竖线
     for entry in all_entries:
         bid_text = _strip_markdown(entry.get("bid", ""))
+        bid_text = _clean_bid(bid_text)
         if not bid_text.strip():
             continue
         entry["bid"] = bid_text
@@ -304,21 +305,30 @@ def _is_skip_line(text: str) -> bool:
 
 def _strip_markdown(text: str) -> str:
     """从文本中移除 Markdown 格式标记。"""
-    # 去除 ## ### 等标题标记
     text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
-    # 去除 ** 粗体
     text = text.replace("**", "")
-    # 去除 __ 粗体
     text = text.replace("__", "")
-    # 去除 ` 代码标记
     text = text.replace("`", "")
-    # 去除 > 引用
     text = re.sub(r"^>\s+", "", text, flags=re.MULTILINE)
-    # 去除水平线
     text = re.sub(r"^[-*_]{3,}\s*$", "", text, flags=re.MULTILINE)
-    # 清理多余空行
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+def _clean_bid(text: str) -> str:
+    """清洗 B 列文本：去竖线、去多余换行、规范化标点。"""
+    # 去掉竖线 (伪表格分隔符)
+    text = text.replace("|", "，").replace("｜", "，")
+    # 去掉连续竖线
+    text = re.sub(r"[|｜]{2,}", "，", text)
+    # 多换行合并为一个
+    text = re.sub(r"\n{2,}", "。", text)
+    text = re.sub(r"\n", "；", text)
+    # 清理多余标点
+    text = re.sub(r"[，。；、]{2,}", "，", text)
+    # 去掉首尾标点
+    text = text.strip("，。；、\n ")
+    return text
 
 
 # ====================================================================

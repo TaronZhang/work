@@ -300,7 +300,8 @@ async function openDetail(projectId) {
         actions.innerHTML = `
             <button class="btn btn-primary" onclick="saveDetail(${projectId})">💾 保存</button>
             <button class="btn btn-primary" onclick="runExtraction(${projectId})">🔍 提取元数据</button>
-            <button class="btn btn-success" onclick="runGenerateExcel(${projectId})">📊 生成 Excel</button>
+            <button class="btn btn-success" data-excel-btn="${projectId}" onclick="runGenerateExcel(${projectId})">📊 生成 Excel</button>
+            <span id="excel-download-${projectId}" style="margin-left:8px;"></span>
             <button class="btn btn-primary" onclick="runCreateCalendar(${projectId})">📅 创建日历提醒</button>
             <button class="btn btn-danger btn-sm" onclick="deleteProjectFromDetail(${projectId})">🗑 删除</button>
         `;
@@ -352,40 +353,34 @@ async function runExtraction(projectId) {
 }
 
 async function runGenerateExcel(projectId) {
+    const btn = document.querySelector(`[data-excel-btn="${projectId}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ 生成中...'; }
     showToast('正在生成 Excel...', 'info');
     try {
-        const resp = await fetch(`/api/extraction/${projectId}/download-excel`);
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.detail || '生成失败');
+        const data = await apiPost('/api/extraction/generate-excel', { project_id: projectId });
+        showToast(`Excel 已生成 (${data.entry_count || '?'} 条)`, 'success');
+        // Show download button
+        const downloadArea = document.getElementById(`excel-download-${projectId}`);
+        if (downloadArea) {
+            downloadArea.innerHTML = `<button class="btn btn-success btn-sm" onclick="runDownloadExcel(${projectId})">📥 下载 Excel</button>`;
         }
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '技术偏离表.xlsx';
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('Excel 已下载', 'success');
+        openDetail(projectId);
     } catch (err) {
         showToast('生成失败: ' + err.message, 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '📊 生成 Excel'; }
     }
 }
 
 async function runDownloadExcel(projectId) {
     try {
         const resp = await fetch(`/api/extraction/${projectId}/download-excel`);
-        if (!resp.ok) {
-            const err = await resp.json();
-            throw new Error(err.detail || '下载失败');
-        }
+        if (!resp.ok) { const err = await resp.json().catch(()=>({detail:'下载失败'})); throw new Error(err.detail); }
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = '技术偏离表.xlsx';
-        a.click();
+        const a = document.createElement('a'); a.href = url; a.download = '技术偏离表.xlsx'; a.click();
         URL.revokeObjectURL(url);
+        showToast('下载完成', 'success');
     } catch (err) {
         showToast('下载失败: ' + err.message, 'error');
     }
