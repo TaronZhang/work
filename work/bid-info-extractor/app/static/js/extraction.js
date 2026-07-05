@@ -133,8 +133,19 @@ async function generateExcel() {
     btn.disabled = true;
     btn.textContent = '⏳ 生成中...';
     try {
-        window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
-        showToast('Excel 已生成并开始下载', 'success');
+        const resp = await fetch(`/api/extraction/${projectId}/download-excel`);
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({ detail: '未知错误' }));
+            throw new Error(errData.detail || '下载失败');
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '技术偏离表.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Excel 已下载', 'success');
     } catch (err) {
         showToast(`生成失败: ${err.message}`, 'error');
     } finally {

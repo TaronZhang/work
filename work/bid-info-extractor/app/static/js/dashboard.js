@@ -352,18 +352,43 @@ async function runExtraction(projectId) {
 }
 
 async function runGenerateExcel(projectId) {
-    showToast('正在生成并下载 Excel...', 'info');
+    showToast('正在生成 Excel...', 'info');
     try {
-        // Direct download — bypasses cache
-        window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
-        showToast('Excel 已生成并开始下载', 'success');
+        const resp = await fetch(`/api/extraction/${projectId}/download-excel`);
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || '生成失败');
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '技术偏离表.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Excel 已下载', 'success');
     } catch (err) {
         showToast('生成失败: ' + err.message, 'error');
     }
 }
 
 async function runDownloadExcel(projectId) {
-    window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
+    try {
+        const resp = await fetch(`/api/extraction/${projectId}/download-excel`);
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.detail || '下载失败');
+        }
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '技术偏离表.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        showToast('下载失败: ' + err.message, 'error');
+    }
 }
 
 async function runCreateCalendar(projectId) {
