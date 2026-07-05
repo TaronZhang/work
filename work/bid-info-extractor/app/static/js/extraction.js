@@ -40,6 +40,11 @@ async function loadProject() {
 }
 
 async function extractMetadata() {
+    // Confirm if re-extracting
+    const currentName = document.getElementById('meta-project-name').textContent;
+    if (currentName && currentName !== '(未提取)' && currentName !== '--') {
+        if (!confirm('当前已有提取结果，重新提取将覆盖现有数据。确定继续？')) return;
+    }
     const btn = document.getElementById('btn-extract-meta');
     btn.disabled = true;
     btn.textContent = '⏳ 提取中...';

@@ -86,13 +86,52 @@ async def upload_document(
     db.add(project)
     await db.flush()
 
+    # Auto-extract metadata if LLM is configured
+    auto_extracted = False
+    extract_error = None
+    if settings.llm_api_key:
+        try:
+            from app.services.metadata_extractor import extract_metadata
+
+            meta = await extract_metadata(
+                doc_text=parsed.full_text,
+                base_url=settings.llm_base_url,
+                api_key=settings.llm_api_key,
+                model=settings.llm_model,
+            )
+            project.project_name = meta.project_name or project.project_name
+            project.bidder_name = meta.bidder_name or project.bidder_name
+            project.submission_deadline = meta.submission_deadline
+            project.bid_obtain_deadline = meta.bid_obtain_deadline
+            project.status = "extracted"
+            await db.flush()
+            auto_extracted = True
+        except Exception as e:
+            extract_error = str(e)
+            # Don't fail the upload — metadata can be extracted later
+
     return {
         "id": project.id,
+        "project_name": project.project_name,
+        "bidder_name": project.bidder_name,
+        "submission_deadline": (
+            project.submission_deadline.isoformat() if project.submission_deadline else None
+        ),
+        "bid_obtain_deadline": (
+            project.bid_obtain_deadline.isoformat() if project.bid_obtain_deadline else None
+        ),
         "source_file_name": project.source_file_name,
         "source_format": project.source_format,
         "total_chars": project.total_chars,
         "status": project.status,
-        "message": "上传成功，文档已解析",
+        "auto_extracted": auto_extracted,
+        "extract_error": extract_error,
+        "message": (
+            "上传成功，已自动提取元数据"
+            if auto_extracted
+            else "上传成功，文档已解析"
+            + (f"（元数据提取失败: {extract_error}）" if extract_error else "（请配置 LLM API Key 以启用自动提取）")
+        ),
     }
 
 

@@ -394,7 +394,13 @@ async function handleUpload(file) {
             progressFill.style.width = `${pct}%`;
             progressText.textContent = `上传中 ${pct}% — ${file.name}`;
         });
-        showToast('上传成功！', 'success');
+        if (result.auto_extracted) {
+            showToast(`上传成功！已自动提取: ${result.project_name || result.bidder_name || '项目'}`, 'success');
+        } else if (result.extract_error) {
+            showToast(`上传成功，但自动提取失败: ${result.extract_error}`, 'info');
+        } else {
+            showToast('上传成功！请配置 LLM API Key 以启用自动提取', 'info');
+        }
         progressEl.classList.add('hidden');
         loadAllData();
     } catch (err) {
