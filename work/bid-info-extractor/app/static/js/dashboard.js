@@ -285,7 +285,10 @@ async function openDetail(projectId) {
                 ${docs.map(d => `
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
                         <span style="font-size:13px;">${d.doc_type === 'markdown' ? '📄' : '📊'} ${escapeHtml(d.file_name)}</span>
-                        <a href="/api/documents/${d.id}/download" class="btn btn-sm btn-primary">下载</a>
+                        ${d.doc_type === 'excel'
+                            ? `<button class="btn btn-sm btn-primary" onclick="runDownloadExcel(${projectId})">下载(最新)</button>`
+                            : `<a href="/api/documents/${d.id}/download" class="btn btn-sm btn-primary">下载</a>`
+                        }
                     </div>
                 `).join('')}
             </div>
@@ -349,14 +352,18 @@ async function runExtraction(projectId) {
 }
 
 async function runGenerateExcel(projectId) {
-    showToast('正在生成 Excel...', 'info');
+    showToast('正在生成并下载 Excel...', 'info');
     try {
-        await apiPost('/api/extraction/generate-excel', { project_id: projectId });
-        showToast('Excel 已生成', 'success');
-        openDetail(projectId);
+        // Direct download — bypasses cache
+        window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
+        showToast('Excel 已生成并开始下载', 'success');
     } catch (err) {
         showToast('生成失败: ' + err.message, 'error');
     }
+}
+
+async function runDownloadExcel(projectId) {
+    window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
 }
 
 async function runCreateCalendar(projectId) {

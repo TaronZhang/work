@@ -133,9 +133,8 @@ async function generateExcel() {
     btn.disabled = true;
     btn.textContent = '⏳ 生成中...';
     try {
-        const data = await apiPost('/api/extraction/generate-excel', { project_id: projectId });
-        showToast('Excel 已生成', 'success');
-        loadProject();
+        window.open(`/api/extraction/${projectId}/download-excel`, '_blank');
+        showToast('Excel 已生成并开始下载', 'success');
     } catch (err) {
         showToast(`生成失败: ${err.message}`, 'error');
     } finally {

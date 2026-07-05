@@ -279,3 +279,78 @@ async def generate_excel(
         "issues": issues,
         "method": "techtoexcel" if pipeline_result and pipeline_result.success else "fallback",
     }
+
+
+@router.get("/{project_id}/download-excel")
+async def download_excel_direct(project_id: int, db: AsyncSession = Depends(get_db)):
+    """一键生成并下载最新 Excel — 绕过缓存，实时生成。"""
+    from fastapi.responses import FileResponse
+
+    # Reuse generate-excel logic
+    req = ExtractRequest(project_id=project_id)
+
+    # Call the same pipeline
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(404, "项目不存在")
+    if not project.raw_text:
+        raise HTTPException(400, "文档尚未解析")
+    if not settings.llm_api_key:
+        raise HTTPException(400, "请先配置 LLM API Key")
+
+    # Identify tech sections
+    try:
+        tech_result = await identify_tech_sections(
+            doc_text=project.raw_text,
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"技术要求识别失败: {str(e)}")
+
+    # Chapter candidates
+    chapter_candidates = []
+    if tech_result.sections:
+        for s in tech_result.sections[:3]:
+            chapter_candidates.append(s.title)
+    chapter_candidates.extend(["采购需求", "技术要求", "项目需求", "服务内容及要求"])
+
+    # Try pipeline
+    pipeline_result = None
+    if project.source_format == "docx" and os.path.exists(project.source_file_path):
+        from app.services.techtoexcel_bridge import run_techtoexcel_pipeline
+
+        for ch_name in chapter_candidates:
+            if not ch_name:
+                continue
+            pipeline_result = await run_techtoexcel_pipeline(
+                source_docx_path=project.source_file_path,
+                chapter_name=ch_name,
+                output_dir=settings.export_dir,
+                project_name=project.project_name or "项目",
+                base_url=settings.llm_base_url,
+                api_key=settings.llm_api_key,
+                model=settings.llm_model,
+            )
+            if pipeline_result.success:
+                break
+
+    if pipeline_result and pipeline_result.success:
+        filepath = pipeline_result.filepath
+        filename = pipeline_result.filename
+    else:
+        # Fallback
+        tech_text = tech_result.combined_text
+        filepath = generate_tech_excel(tech_text, project.project_name or "项目")
+        filename = os.path.basename(filepath)
+
+    if not os.path.exists(filepath):
+        raise HTTPException(500, "文件生成失败")
+
+    return FileResponse(
+        filepath,
+        filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
