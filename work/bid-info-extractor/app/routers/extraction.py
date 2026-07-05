@@ -51,12 +51,15 @@ async def extract_project_metadata(
         raise HTTPException(400, "请先在设置中配置 LLM API Key")
 
     # Call LLM
-    meta = await extract_metadata(
-        doc_text=project.raw_text,
-        base_url=settings.llm_base_url,
-        api_key=settings.llm_api_key,
-        model=settings.llm_model,
-    )
+    try:
+        meta = await extract_metadata(
+            doc_text=project.raw_text,
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"LLM 提取失败: {str(e)}")
 
     # Update project
     project.project_name = meta.project_name or project.project_name
@@ -119,19 +122,28 @@ async def generate_markdown(
     db: AsyncSession = Depends(get_db),
 ):
     """Generate the summary markdown file."""
+    if not req.project_id or req.project_id <= 0:
+        raise HTTPException(400, "无效的项目 ID")
+
     result = await db.execute(select(Project).where(Project.id == req.project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(404, "项目不存在")
     if not project.project_name:
-        raise HTTPException(400, "请先提取元数据")
+        raise HTTPException(400, "请先提取元数据（项目名称不能为空）")
 
-    filepath = generate_markdown_summary(
-        project_name=project.project_name,
-        bidder_name=project.bidder_name or "",
-        deadline=project.submission_deadline,
-        source_filename=project.source_file_name,
-    )
+    try:
+        filepath = generate_markdown_summary(
+            project_name=project.project_name,
+            bidder_name=project.bidder_name or "",
+            deadline=project.submission_deadline,
+            source_filename=project.source_file_name,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"Markdown 生成失败: {str(e)}")
+
+    if not os.path.exists(filepath):
+        raise HTTPException(500, "文件生成失败，请检查磁盘空间和目录权限")
 
     filename = os.path.basename(filepath)
     file_size = os.path.getsize(filepath)
@@ -168,16 +180,22 @@ async def generate_excel(
     if not project:
         raise HTTPException(404, "项目不存在")
 
+    if not project.raw_text:
+        raise HTTPException(400, "文档尚未解析，请重新上传")
+
     if not settings.llm_api_key:
         raise HTTPException(400, "请先配置 LLM API Key")
 
     # Step 1: Identify tech sections to get chapter name
-    tech_result = await identify_tech_sections(
-        doc_text=project.raw_text,
-        base_url=settings.llm_base_url,
-        api_key=settings.llm_api_key,
-        model=settings.llm_model,
-    )
+    try:
+        tech_result = await identify_tech_sections(
+            doc_text=project.raw_text,
+            base_url=settings.llm_base_url,
+            api_key=settings.llm_api_key,
+            model=settings.llm_model,
+        )
+    except Exception as e:
+        raise HTTPException(500, f"技术要求识别失败: {str(e)}")
 
     if not tech_result.has_tech_content:
         raise HTTPException(400, "未识别到技术要求内容")
