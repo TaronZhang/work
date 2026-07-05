@@ -10,7 +10,7 @@ from typing import Optional
 
 from openai import AsyncOpenAI
 
-METADATA_PROMPT = """你是一个标书信息提取专家。你的任务是从招标文件中提取三项关键信息。
+METADATA_PROMPT = """你是一个标书信息提取专家。你的任务是从招标文件中提取关键信息。
 
 请严格按以下要求提取：
 
@@ -19,7 +19,7 @@ METADATA_PROMPT = """你是一个标书信息提取专家。你的任务是从�
    - 格式如："XXX项目"、"XXX采购"、"XXX服务"
    - 提取完整的项目全称
 
-2. 招标人名称（招标人名称）：
+2. 招标人名称/客户名称（招标人名称）：
    - 通常是"招标人"、"采购人"、"业主"后面的单位名称
    - 也可能是"XXX公司"、"XXX局"、"XXX中心"等
    - 提取完整的单位全称，不含"招标人："前缀
@@ -30,11 +30,18 @@ METADATA_PROMPT = """你是一个标书信息提取专家。你的任务是从�
    - 如果只有日期没有时间，默认时间为 09:00
    - 如果完全找不到，设为 null
 
+4. 标书获取截止日期（标书获取截止日期，也称招标文件获取截止时间、标书发售截止时间）：
+   - 格式如：2025年6月15日 17:00 或 2025-06-15 17:00
+   - 通常出现在"招标文件获取截止时间"、"标书发售截止时间"、"获取招标文件截止时间"附近
+   - 如果只有日期没有时间，默认时间为 17:00
+   - 如果完全找不到，设为 null
+
 输出格式 (JSON):
 {
   "project_name": "提取的项目全称",
   "bidder_name": "提取的招标人全称",
   "submission_deadline": "YYYY-MM-DD HH:MM",
+  "bid_obtain_deadline": "YYYY-MM-DD HH:MM",
   "deadline_found": true,
   "confidence": "high|medium|low"
 }
@@ -42,7 +49,7 @@ METADATA_PROMPT = """你是一个标书信息提取专家。你的任务是从�
 注意：
 - 如果某项信息不确定，设置 confidence 为 medium 或 low
 - 尽量从原文中精确提取，不要编造或修改
-- deadline 字段如果是null，deadline_found 为 false"""
+- deadline 字段如果是null，对应的 _found 字段设为 false"""
 
 
 @dataclass
@@ -50,6 +57,7 @@ class MetadataResult:
     project_name: str = ""
     bidder_name: str = ""
     submission_deadline: Optional[datetime] = None
+    bid_obtain_deadline: Optional[datetime] = None
     deadline_found: bool = False
     confidence: str = "low"
     raw_response: dict = field(default_factory=dict)
@@ -95,10 +103,16 @@ async def extract_metadata(
     if deadline_str and deadline_str != "null":
         deadline = _parse_deadline(deadline_str)
 
+    obtain_deadline = None
+    obtain_str = data.get("bid_obtain_deadline", "")
+    if obtain_str and obtain_str != "null":
+        obtain_deadline = _parse_deadline(obtain_str)
+
     return MetadataResult(
         project_name=data.get("project_name", ""),
         bidder_name=data.get("bidder_name", ""),
         submission_deadline=deadline,
+        bid_obtain_deadline=obtain_deadline,
         deadline_found=data.get("deadline_found", bool(deadline)),
         confidence=data.get("confidence", "low"),
         raw_response=data,

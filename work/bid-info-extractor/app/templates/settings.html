@@ -5,11 +5,14 @@
 <section class="panel">
     <div class="panel-header"><h2>⚙️ 系统设置</h2></div>
     <div class="panel-body">
+        <!-- Security Status -->
+        <div id="security-status" style="margin-bottom:var(--space-lg);padding:12px 16px;border-radius:var(--radius-md);font-size:13px;display:none;"></div>
+
         <!-- LLM Config -->
-        <h3 style="margin-bottom:var(--space-md);">🤖 大模型配置</h3>
+        <h3 style="margin-bottom:var(--space-md);">🤖 大模型配置 (DeepSeek)</h3>
         <div class="form-group">
             <label class="form-label">API Base URL</label>
-            <input class="form-input" id="cfg-llm-base-url" placeholder="https://api.openai.com/v1">
+            <input class="form-input" id="cfg-llm-base-url" placeholder="https://api.deepseek.com/v1">
         </div>
         <div class="form-group">
             <label class="form-label">API Key</label>
@@ -17,8 +20,8 @@
         </div>
         <div class="form-group">
             <label class="form-label">Model</label>
-            <input class="form-input" id="cfg-llm-model" placeholder="gpt-4o-mini">
-            <p class="form-hint">支持 OpenAI 兼容接口，如 gpt-4o-mini, deepseek-chat, doubao-pro 等</p>
+            <input class="form-input" id="cfg-llm-model" placeholder="deepseek-chat">
+            <p class="form-hint">支持 OpenAI 兼容接口。默认 DeepSeek: deepseek-chat</p>
         </div>
         <button class="btn btn-primary" onclick="testLLM()">🔌 测试连接</button>
 
@@ -47,7 +50,19 @@
         <div class="form-group">
             <label class="form-label">额外参数</label>
             <input class="form-input" id="cfg-techtoexcel-args" placeholder="--format xlsx --verbose">
-            <p class="form-hint">调用脚本时附加的命令行参数（可选）</p>
+        </div>
+
+        <hr style="border:1px solid var(--border);margin:var(--space-xl) 0;">
+
+        <!-- API Token -->
+        <h3 style="margin-bottom:var(--space-md);">🔑 外部 API Token</h3>
+        <div class="form-group">
+            <label class="form-label">当前 Token</label>
+            <div style="display:flex;gap:var(--space-sm);align-items:center;">
+                <input class="form-input" id="cfg-api-token" type="password" readonly placeholder="未生成">
+                <button class="btn btn-primary btn-sm" onclick="generateToken()" style="white-space:nowrap;">生成新 Token</button>
+            </div>
+            <p class="form-hint">用于外部系统调用 /api/external/* 接口。Header: Authorization: Bearer &lt;token&gt;</p>
         </div>
 
         <div class="action-bar" style="margin-top:var(--space-xl);">

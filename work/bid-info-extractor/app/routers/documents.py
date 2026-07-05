@@ -190,6 +190,45 @@ async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
     return {"message": "已删除"}
 
 
+class ProjectUpdate(BaseModel):
+    project_name: Optional[str] = None
+    bidder_name: Optional[str] = None
+    bid_obtain_deadline: Optional[str] = None
+    submission_deadline: Optional[str] = None
+    status: Optional[str] = None
+
+
+@router.put("/{project_id}/update")
+async def update_project(project_id: int, data: ProjectUpdate, db: AsyncSession = Depends(get_db)):
+    """Update project metadata fields."""
+    from datetime import datetime as dt
+
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(404, "项目不存在")
+
+    if data.project_name is not None:
+        project.project_name = data.project_name
+    if data.bidder_name is not None:
+        project.bidder_name = data.bidder_name
+    if data.bid_obtain_deadline is not None:
+        try:
+            project.bid_obtain_deadline = dt.fromisoformat(data.bid_obtain_deadline) if data.bid_obtain_deadline else None
+        except (ValueError, TypeError):
+            project.bid_obtain_deadline = None
+    if data.submission_deadline is not None:
+        try:
+            project.submission_deadline = dt.fromisoformat(data.submission_deadline) if data.submission_deadline else None
+        except (ValueError, TypeError):
+            project.submission_deadline = None
+    if data.status is not None:
+        project.status = data.status
+
+    await db.flush()
+    return {"message": "已保存", "id": project.id}
+
+
 @router.get("/{document_id}/download")
 async def download_document(document_id: int, db: AsyncSession = Depends(get_db)):
     """Download a generated document file."""

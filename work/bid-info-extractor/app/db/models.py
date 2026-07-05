@@ -21,7 +21,8 @@ class Project(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     project_name = Column(String(500), nullable=True, comment="提取的项目名称")
-    bidder_name = Column(String(300), nullable=True, comment="招标人名称")
+    bidder_name = Column(String(300), nullable=True, comment="招标人名称/客户名称")
+    bid_obtain_deadline = Column(DateTime, nullable=True, comment="标书获取截止日期")
     submission_deadline = Column(DateTime, nullable=True, comment="投标截止日期")
     source_file_name = Column(String(500), nullable=False, comment="原始文件名")
     source_file_path = Column(String(1000), nullable=False, comment="存储路径")
@@ -87,4 +88,5 @@ class AppConfig(Base):
 
     key = Column(String(100), primary_key=True)
     value = Column(Text, nullable=True)
+    encrypted = Column(Integer, default=0, comment="0=明文, 1=AES-256-GCM加密")
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

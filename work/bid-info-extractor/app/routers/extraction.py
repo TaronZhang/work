@@ -62,6 +62,7 @@ async def extract_project_metadata(
     project.project_name = meta.project_name or project.project_name
     project.bidder_name = meta.bidder_name or project.bidder_name
     project.submission_deadline = meta.submission_deadline
+    project.bid_obtain_deadline = meta.bid_obtain_deadline
     project.status = "extracted"
     await db.flush()
 

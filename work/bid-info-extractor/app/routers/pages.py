@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Page routes — Jinja2 template rendering."""
+
+from __future__ import annotations
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
@@ -9,8 +9,8 @@ router = APIRouter()
 
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return request.app.state.templates.get_template("index.html").render(
+async def dashboard(request: Request):
+    return request.app.state.templates.get_template("dashboard.html").render(
         request=request
     )
 
@@ -26,13 +26,6 @@ async def documents_page(request: Request):
 async def extraction_page(request: Request, project_id: int):
     return request.app.state.templates.get_template("extraction.html").render(
         request=request, project_id=project_id
-    )
-
-
-@router.get("/calendar", response_class=HTMLResponse)
-async def calendar_page(request: Request):
-    return request.app.state.templates.get_template("calendar.html").render(
-        request=request
     )
 
 
