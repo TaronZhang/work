@@ -30,7 +30,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-打开 http://127.0.0.1:5000
+打开 http://127.0.0.1:29661
 
 ## 项目结构
 
