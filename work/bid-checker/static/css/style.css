@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   BidChecker — 标书检查工具
+   DocDiff v3 — 文档重复度比对工具
    Dark Theme Design System
    ═══════════════════════════════════════════════════ */
 
@@ -144,9 +144,7 @@ body {
   cursor: pointer;
 }
 
-.toggle input {
-  display: none;
-}
+.toggle input { display: none; }
 
 .toggle-track {
   position: absolute;
@@ -202,31 +200,28 @@ body {
   color: var(--text-secondary);
 }
 
-/* ── Upload Grid ────────────────────────────────── */
-.upload-grid {
+/* ── Document Upload Grid ───────────────────────── */
+.doc-upload-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 }
 
 @media (min-width: 768px) {
-  .upload-grid {
+  .doc-upload-grid {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .tender-card {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .bid-list {
-    display: contents;
   }
 }
 
-/* ── Upload Card ────────────────────────────────── */
-.upload-card {
+@media (min-width: 1024px) {
+  .doc-upload-grid.has-3-plus {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Document Upload Card ───────────────────────── */
+.doc-upload-card {
   background: var(--bg-default);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -234,39 +229,74 @@ body {
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
-.upload-card:hover {
+.doc-upload-card:hover {
   border-color: var(--border-strong);
 }
 
-.upload-card.has-file {
+.doc-upload-card.has-file {
   border-color: var(--green);
 }
 
-.upload-card-header {
+.doc-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: var(--space-md);
-  border-bottom: 1px solid var(--border);
+  padding: var(--space-md) var(--space-md) 0;
+  gap: var(--space-sm);
 }
 
-.badge {
-  font-size: 12px;
+.doc-label-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+}
+
+.doc-label-input {
+  font-size: 14px;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  letter-spacing: 0.02em;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-family: var(--font-ui);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+  width: 100%;
 }
 
-.badge-primary {
-  background: var(--accent-blue);
-  color: #fff;
+.doc-label-input:hover {
+  border-color: var(--border-strong);
 }
 
-.badge-bid {
+.doc-label-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
   background: var(--bg-surface);
-  color: var(--text-secondary);
+}
+
+.doc-type-select {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-surface);
   border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  padding: 3px 8px;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  width: fit-content;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 24px;
+}
+
+.doc-type-select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
 }
 
 /* ── Drop Zone ──────────────────────────────────── */
@@ -274,7 +304,7 @@ body {
   padding: var(--space-2xl) var(--space-xl);
   cursor: pointer;
   transition: background var(--duration-fast) var(--ease-out);
-  min-height: 140px;
+  min-height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -314,17 +344,9 @@ body {
   font-size: 13px;
 }
 
-.file-status .status-ok {
-  color: var(--green);
-}
-
-.file-status .status-error {
-  color: var(--red);
-}
-
-.file-status .status-loading {
-  color: var(--text-secondary);
-}
+.file-status .status-ok { color: var(--green); }
+.file-status .status-error { color: var(--red); }
+.file-status .status-loading { color: var(--text-secondary); }
 
 .file-card {
   display: flex;
@@ -350,6 +372,62 @@ body {
 }
 
 .file-card .file-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ── Upload Actions ─────────────────────────────── */
+.upload-actions {
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Compare Mode Bar ───────────────────────────── */
+.compare-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-default);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.compare-mode-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.radio-label:has(input:checked) {
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+  background: rgba(74, 158, 255, 0.08);
+}
+
+.radio-label input[type="radio"] {
+  accent-color: var(--accent-blue);
+}
+
+.radio-text {
+  font-weight: 600;
+}
+
+.radio-hint {
   font-size: 11px;
   color: var(--text-tertiary);
 }
@@ -403,7 +481,6 @@ body {
   justify-content: center;
   padding: 14px;
   border-style: dashed;
-  margin-bottom: var(--space-lg);
 }
 
 .btn-icon {
@@ -491,9 +568,7 @@ body {
   border-color: var(--accent-blue);
 }
 
-.input::placeholder {
-  color: var(--text-tertiary);
-}
+.input::placeholder { color: var(--text-tertiary); }
 
 .btn-toggle-vis {
   position: absolute;
@@ -605,9 +680,15 @@ body {
 }
 
 /* ── Summary Cards ──────────────────────────────── */
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+}
+
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
@@ -636,11 +717,13 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: var(--space-md);
+  gap: var(--space-sm);
 }
 
-.result-card .card-bid-name {
-  font-size: 15px;
+.result-card .card-pair-name {
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .result-card .card-severity {
@@ -648,6 +731,7 @@ body {
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 20px;
+  flex-shrink: 0;
 }
 
 .severity-high { background: var(--red-bg); color: var(--red); }
@@ -684,6 +768,14 @@ body {
 .gauge-fill.high { background: var(--red); }
 .gauge-fill.medium { background: var(--amber); }
 .gauge-fill.low { background: var(--green); }
+
+/* ── Empty State ────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--text-tertiary);
+  font-size: 15px;
+}
 
 /* ── Detail Section ─────────────────────────────── */
 .detail-section {
@@ -843,5 +935,5 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.upload-card { animation: fadeInUp 0.2s var(--ease-out); }
-.result-card  { animation: fadeInUp 0.2s var(--ease-out); }
+.doc-upload-card { animation: fadeInUp 0.2s var(--ease-out); }
+.result-card     { animation: fadeInUp 0.2s var(--ease-out); }

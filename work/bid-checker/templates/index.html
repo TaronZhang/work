@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>标书检查工具 — BidChecker</title>
+  <title>文档重复度比对工具 — DocDiff</title>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -18,8 +18,8 @@
           <line x1="16" y1="17" x2="8" y2="17"/>
           <polyline points="10 9 9 9 8 9"/>
         </svg>
-        <span class="brand-text">标书检查工具</span>
-        <span class="version-badge">v2</span>
+        <span class="brand-text">文档重复度比对</span>
+        <span class="version-badge">v3</span>
       </div>
       <div class="mode-toggle-wrap">
         <span class="mode-label">快速</span>
@@ -37,89 +37,38 @@
     <!-- Upload Section -->
     <section id="uploadSection" class="upload-section">
       <div class="section-title">
-        <h2>上传文件</h2>
-        <p>支持 .docx / .pdf / .txt，单文件最大 500MB · 大文件自动分片处理</p>
+        <h2>上传文档进行比对</h2>
+        <p>支持 .docx / .pdf / .txt，上传后进行重复度检测 · 大文件自动分片处理</p>
       </div>
 
-      <div class="upload-grid">
-        <!-- Tender Upload -->
-        <div class="upload-card tender-card">
-          <div class="upload-card-header">
-            <span class="badge badge-primary">招标文件</span>
-          </div>
-          <div class="drop-zone" id="tenderDropZone">
-            <div class="drop-zone-content">
-              <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              <p>拖拽招标文件到此处</p>
-              <span class="drop-hint">或 点击选择文件</span>
-            </div>
-            <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="tender" hidden>
-          </div>
-          <div class="file-status" id="tenderStatus"></div>
-        </div>
-
-        <!-- Bid Uploads -->
-        <div id="bidList" class="bid-list">
-          <div class="upload-card bid-card" data-bid-index="0">
-            <div class="upload-card-header">
-              <span class="badge badge-bid">投标文件 1</span>
-              <button class="btn-icon btn-remove" title="移除" data-remove="0" aria-label="移除投标文件 1">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <div class="drop-zone bid-drop-zone" data-bid-index="0">
-              <div class="drop-zone-content">
-                <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <p>拖拽投标文件到此处</p>
-                <span class="drop-hint">或 点击选择文件</span>
-              </div>
-              <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="bid" data-bid-index="0" hidden>
-            </div>
-            <div class="file-status" id="bidStatus-0"></div>
-          </div>
-
-          <div class="upload-card bid-card" data-bid-index="1">
-            <div class="upload-card-header">
-              <span class="badge badge-bid">投标文件 2</span>
-              <button class="btn-icon btn-remove" title="移除" data-remove="1" aria-label="移除投标文件 2">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <div class="drop-zone bid-drop-zone" data-bid-index="1">
-              <div class="drop-zone-content">
-                <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <p>拖拽投标文件到此处</p>
-                <span class="drop-hint">或 点击选择文件</span>
-              </div>
-              <input type="file" class="file-input" accept=".docx,.pdf,.txt" data-doc-type="bid" data-bid-index="1" hidden>
-            </div>
-            <div class="file-status" id="bidStatus-1"></div>
-          </div>
-        </div>
+      <!-- Document Upload Grid -->
+      <div class="doc-upload-grid" id="docUploadGrid">
+        <!-- Rendered by JS -->
       </div>
 
-      <button class="btn btn-outline btn-add" id="addBidBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        新增投标文件
-      </button>
+      <div class="upload-actions">
+        <button class="btn btn-outline btn-add" id="addDocBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          添加文档
+        </button>
+      </div>
+
+      <!-- Compare Mode -->
+      <div class="compare-mode-bar">
+        <span class="compare-mode-label">比对模式：</span>
+        <label class="radio-label">
+          <input type="radio" name="compareMode" value="pairwise" checked>
+          <span class="radio-text">两两互比</span>
+          <span class="radio-hint">所有文档两两比对</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="compareMode" value="one_to_many">
+          <span class="radio-text">一对多</span>
+          <span class="radio-hint">以第一个文档为基准</span>
+        </label>
+      </div>
 
       <!-- AI Config -->
       <div id="aiConfig" class="ai-config hidden">
@@ -157,7 +106,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
-          开始比较
+          开始比对
         </button>
       </div>
 
@@ -193,7 +142,7 @@
             <polyline points="23 4 23 10 17 10"/>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
           </svg>
-          重新比较
+          重新比对
         </button>
       </div>
     </section>
@@ -201,9 +150,9 @@
   </main>
 
   <footer class="footer">
-    <span>BidChecker v2.0</span>
+    <span>DocDiff v3.0</span>
     <span>·</span>
-    <span>大文件自动拆分 · 单文件最大 500MB</span>
+    <span>文档重复度智能比对 · 大文件自动分片</span>
     <span>·</span>
     <span>上传后仅存储于内存，关闭即清除</span>
   </footer>
