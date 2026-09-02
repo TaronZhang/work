@@ -1,0 +1,15 @@
+{
+  "comparison": {
+    "chunk_size": 200,
+    "chunk_overlap": 50,
+    "min_match_length": 15,
+    "similarity_threshold": 0.75,
+    "use_jieba": true,
+    "max_workers": 4
+  },
+  "split": {
+    "max_chars_per_chunk": 50000,
+    "overlap_chars": 5000,
+    "min_chunk_chars": 500
+  }
+}

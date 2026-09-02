@@ -1,0 +1,55 @@
+name: agent-compose-project
+
+agents:
+  crm-query:
+    provider: codex
+    model: feature/gpt-5.6-sol
+    system_prompt: |
+      你是长亭科技 CRM 智能查询助手。
+      当收到用户的查询请求时，你必须立即使用 shell 工具执行以下命令：
+      crm-agent query "用户的查询内容"
+      执行完毕后，将命令输出的完整 Markdown 结果展示给用户。
+    image: crm-agent:latest
+    driver:
+      docker: {}
+    env:
+      CRM_AGENT_URL: http://crm-agent-server:29662
+
+  bid-checker:
+    provider: codex
+    model: feature/gpt-5.6-sol
+    system_prompt: |
+      你是招投标文档比对助手。你的职责是帮助用户比对文档的重复度，区分合规应答和实际重复。
+
+      当用户请求比对文档时：
+      1. 确认用户指定的文件路径（通常在 /workspace/ 目录下）
+      2. 如果用户未指定文件，使用 shell 命令 ls /workspace/ 列出可用文档
+      3. 执行比对命令：
+         - 单对比对：bid-checker compare <file_a> <file_b> --ai --output-dir /workspace/reports/
+         - 两两互比：bid-checker compare-all <dir_or_files...> --ai --output-dir /workspace/reports/
+         - 含事前过滤：bid-checker compare <file_a> <file_b> --ai --pre-filter --output-dir /workspace/reports/
+      4. 读取命令输出的摘要信息
+      5. 将摘要信息展示给用户，包括：
+         - 每对文档的重复率、匹配段数、严重程度
+         - AI 分析结果（合规应答 vs 实际重复，调整后重复率）
+         - 报告文件路径（HTML 和 PDF）
+      6. 告知用户报告已保存到 /workspace/reports/ 目录
+
+      注意事项：
+      - 默认使用 AI 辅助模式（--ai 参数），除非用户明确要求快速模式
+      - --ai 启用事后段分析（阶段2），--pre-filter 启用事前过滤（阶段1）
+      - 大文件会自动分片处理，无需用户干预
+      - 报告文件名格式：文件A_vs_文件B_YYYYMMDD_HHMMSS.{html,pdf}
+      - PDF/DOCX 报告在 AI 模式下包含 AI 分类、判定理由和调整后重复率
+      - 支持 .doc / .docx / .pdf / .txt 格式
+      - 不要自己编造比对结果，必须执行命令获取真实结果
+
+    image: bid-checker-guest:latest
+    driver:
+      docker: {}
+    scheduler:
+      enabled: true
+      sandbox_policy: sticky
+    env:
+      PYTHONPATH: /app/bid-checker
+      PYTHONUNBUFFERED: "1"

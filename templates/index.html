@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档重复度比对工具 — DocDiff</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span class="brand-text">文档重复度比对</span>
+        <span class="version-badge">v1.2</span>
+      </div>
+      <div class="mode-toggle-wrap">
+        <span class="mode-label">快速</span>
+        <label class="toggle">
+          <input type="checkbox" id="modeToggle">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <span class="mode-label">AI 辅助</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Upload Section -->
+    <section id="uploadSection" class="upload-section">
+      <div class="section-title">
+        <h2>上传文档进行比对</h2>
+        <p>支持 .docx / .pdf / .txt，上传后进行重复度检测 · 大文件自动分片处理</p>
+      </div>
+
+      <!-- Document Upload Grid -->
+      <div class="doc-upload-grid" id="docUploadGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="upload-actions">
+        <button class="btn btn-outline btn-add" id="addDocBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          添加文档
+        </button>
+      </div>
+
+      <!-- Compare Mode -->
+      <div class="compare-mode-bar">
+        <span class="compare-mode-label">比对模式：</span>
+        <label class="radio-label">
+          <input type="radio" name="compareMode" value="pairwise" checked>
+          <span class="radio-text">两两互比</span>
+          <span class="radio-hint">所有文档两两比对</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="compareMode" value="one_to_many">
+          <span class="radio-text">一对多</span>
+          <span class="radio-hint">以第一个文档为基准</span>
+        </label>
+      </div>
+
+      <!-- AI Config -->
+      <div id="aiConfig" class="ai-config hidden">
+        <div class="config-card">
+          <div class="config-field" style="flex:none;width:100%">
+            <div id="aiKeyStatus" class="ai-key-status">
+              <span class="status-icon">●</span>
+              <span class="status-text">正在检查 API Key 配置…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Button -->
+      <div class="action-bar">
+        <button class="btn btn-primary btn-compare" id="compareBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          开始比对
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div id="progressBar" class="progress-wrap hidden">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="progress-text" id="progressText">正在分析…</p>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="resultsSection" class="results-section hidden">
+
+      <div id="filterSummary" class="filter-summary hidden">
+        <h3>AI 过滤结果</h3>
+        <p class="filter-subtitle">已自动识别并过滤以下类型的招标要求（不参与实质内容比对）</p>
+        <div class="filter-grid" id="filterGrid"></div>
+      </div>
+
+      <h3>比对结果</h3>
+      <div class="summary-cards" id="summaryCards"></div>
+
+      <div class="detail-section" id="detailSection">
+        <div class="detail-tabs" id="detailTabs"></div>
+        <div class="detail-content" id="detailContent"></div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-outline" id="exportPdfBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 12 15 15"/>
+          </svg>
+          导出 PDF
+        </button>
+        <button class="btn btn-outline" id="exportDocxBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          导出 DOCX
+        </button>
+        <button class="btn btn-outline" id="resetBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          重新比对
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <span>DocDiff v1.2</span>
+    <span>·</span>
+    <span>文档重复度智能比对 · 大文件自动分片</span>
+    <span>·</span>
+    <span>上传后仅存储于内存，关闭即清除</span>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

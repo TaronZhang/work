@@ -1,0 +1,57 @@
+{
+  "segment_id": 0,
+  "segment_total_chars": 600,
+  "llm_classification": "compliance_response",
+  "llm_reason": "重复内容主体为防火墙、终端安全系统的技术参数、功能指标及认证材料要求，投标文件以参数清单形式逐条确认并指向证明附件，属于必要的合规响应；虽含少量项目背景复述，但不足以改变该段整体性质",
+  "human_reviewer": "售前技术工程师（初级）",
+  "human_approver": "售前技术经理",
+  "review_date": "2026-08-24",
+  "corrections": [
+    {
+      "range_start": 32,
+      "range_end": 96,
+      "chars": 65,
+      "from_class": "compliance_response",
+      "to_class": "actual_duplication",
+      "reason": "项目背景叙述文本（\"本项目旨在建设省级网络安全防护体系，提升全省网络安全监测、预警和应急处置能力。项目覆盖省直机关及下属单位网络基础设施安全防护。\"），投标方逐字照搬，不属于参数响应范畴",
+      "text_excerpt": "本项目旨在建设省级网络安全防护体系，提升全省网络安全监测、预警和应急处置能力。项目覆盖省直机关及下属单位网络基础设施安全防护。"
+    },
+    {
+      "range_start": 24,
+      "range_end": 30,
+      "chars": 7,
+      "from_class": "compliance_response",
+      "to_class": "actual_duplication",
+      "reason": "\"第一章 项目概述\"章节标题被逐字复制到投标文件\"第一章 项目理解\"的对应位置，属方案结构照搬",
+      "text_excerpt": "第一章 项目概述"
+    },
+    {
+      "range_start": 0,
+      "range_end": 22,
+      "chars": 23,
+      "from_class": "compliance_response",
+      "to_class": "actual_duplication",
+      "reason": "文档标题被投标方修改后沿用（\"招标文件\"改为\"投标文件A公司\"），核心名称照搬，属标识性重复",
+      "text_excerpt": "某省级网络安全建设项目招标"
+    },
+    {
+      "range_start": 97,
+      "range_end": 113,
+      "chars": 12,
+      "from_class": "compliance_response",
+      "to_class": "actual_duplication",
+      "reason": "\"第二章 技术要求\"章节结构被照搬，虽为格式性内容，但投标方逐字复制属过度照搬",
+      "text_excerpt": "第二章 技术要求"
+    }
+  ],
+  "total_reclassified_chars": 107,
+  "final_compliance_chars": 493,
+  "final_actual_dup_chars": 107,
+  "final_percentage": 12.0,
+  "calculation": {
+    "formula": "实际重复字符数 / 招标文件总字符数 * 100",
+    "actual_dup_chars": 107,
+    "total_tender_chars": 888,
+    "result_percentage": 12.0
+  }
+}

@@ -1,0 +1,10 @@
+flask==3.0.3
+python-docx==1.1.2
+pdfplumber==0.11.4
+openai==1.30.5
+jieba==0.42.1
+python-magic==0.4.27
+pydantic==2.7.4
+python-dotenv==1.0.1
+reportlab==4.2.5
+olefile==0.47

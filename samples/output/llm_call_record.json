@@ -1,0 +1,14 @@
+{
+  "call_time": "2026-08-24 19:11:32",
+  "model": "gpt-5.6-sol",
+  "endpoint": "https://ai-api-gateway.app.baizhi.cloud/api/openai/chat/completions",
+  "temperature": 0.1,
+  "max_tokens": 4096,
+  "elapsed_seconds": 9.0,
+  "segment_count": 1,
+  "original_percentage": 56.3,
+  "adjusted_percentage": 0.0,
+  "compliance_chars": 600,
+  "actual_duplication_chars": 0,
+  "response_excerpt": "重复内容主体为防火墙、终端安全系统的技术参数、功能指标及认证材料要求，投标文件以参数清单形式逐条确认并指向证明附件，属于必要的合规响应；虽含少量项目背景复述，但不足以改变该段整体性质"
+}
